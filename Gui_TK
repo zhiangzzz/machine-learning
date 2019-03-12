@@ -1,0 +1,110 @@
+from tkinter import *
+import tkinter.filedialog as filediaglog
+from tkinter import ttk
+from tkinter import messagebox
+import sys
+import numpy as np
+import SVDD1 as SS
+
+class GUImodel:
+    def __init__(self,init_window_name):
+        self.init_window_name = init_window_name
+
+
+    def set_init_window(self):
+        self.init_window_name.title("人工智能故障诊断系统")
+        self.init_window_name.geometry('600x400+10+10')
+        self.init_window_name.attributes("-alpha",1)
+        #label
+        #self.init_data_label = Label(self.init_window_name,text='请输入训练数据')
+        #self.init_data_label.grid(row=0, column=0)
+        #self.result_data_label = Label(self.init_window_name, text='请输入测试数据')
+        #button
+        self.button1 = Button(self.init_window_name,text='输入训练数据',height=3,width=15,command=self.selectPath)
+        self.button1.grid(row=1,column=1)
+        self.button2 = Button(self.init_window_name,text='输入测试数据',height=3,width=15,command=self.selectPath2)
+        self.button2.grid(row=3, column=1)
+        self.button3 = Button(self.init_window_name,text='诊断结果',height=3,width=15,command=self.resultz)
+        self.button3.grid(row=3,column=2)
+
+        #listbox
+        #self.lbval = StringVar()
+        #self.lbval.set(("a","b","c","d"))
+        #self.listbox1 = Listbox(self.init_window_name,listvariable=self.lbval,height=8)
+        #self.listbox1.grid(row=2,column=4)
+        #self.listbox1.pack()
+        #for item in ['PCA','ICA','SVDD','NN','K-means']:
+            #self.listbox1.insert(END,item)
+
+        #label
+        self.init_data_label1 = Label(self.init_window_name,text='诊断日志')
+        self.init_data_label1.grid(row=5, column=1)
+        self.init_data_label2 = Label(self.init_window_name, text='算法选择')
+        self.init_data_label2.grid(row=1, column=2)
+        #text
+        self.init_data_text1 = Text(self.init_window_name,width=40,height=10)
+        self.init_data_text1.grid(row=6,column=1)
+        #Entry
+        self.entry1 = Entry(self.init_window_name,width=30)
+        self.entry1.grid(row=2,column=1)
+        self.entry2 = Entry(self.init_window_name,width=30)
+        self.entry2.grid(row=4,column=1)
+        #combobox
+        number = StringVar()
+        numberChosen = ttk.Combobox(self.init_window_name,width=12,textvariable=number)
+        numberChosen['values']=('PCA','ICA','SVDD','PLS')
+        numberChosen.grid(row=1,column=3)
+        numberChosen.current(2)
+        numberChosen.bind("<<ComboboxSeleted>>",self.SVDD22)
+
+    def selectPath(self):
+        self.entry1.delete(0,END)
+        global filepath
+        filepath = filediaglog.askopenfilename()
+        if filepath:
+            self.entry1.insert(0,filepath)
+
+    def selectPath2(self):
+        self.entry2.delete(0,END)
+        global filepath2
+        filepath2 = filediaglog.askopenfilename()
+        if filepath2:
+            self.entry2.insert(0,filepath2)
+    def SVDD22(self):
+        print("hel")
+
+    def resultz(self):
+        #x = '/home/rapperli/practice_project/SVDD_faultdiagnosis/xunlian/train0.txt'
+        #y = '/home/rapperli/practice_project/SVDD_faultdiagnosis/ceshi/test1.txt'
+        try:
+            x = filepath
+            y = filepath2
+
+            XX = SS.SVDD(0.1,['gaussian',100,2,3])
+            #XX = sss(0.1, ['gaussian', 100, 2, 3])
+            x_train, x_test = XX.read_txt(x, y)
+            m = np.ndim(x_train)
+            n = np.ndim(x_test)
+            if m == 1:
+                x_train = x_train.reshape(x_train.shape[0], 1)
+            if n == 1:
+                x_test = x_test.reshape(x_test.shape[0], 1)
+            x_train, x_test = XX.yuchuli(x_train, x_test)
+            K = XX.Kernel_matrix(x_train, x_train)
+            alpha = XX.SVDD_smo(K)
+            R2,D2 = XX.CaculateR2D2(x_train, x_test, alpha, K)
+            A = D2.T - R2
+            zz = 1
+            lis = []
+            for i in range(np.size(A, 1)):
+                aaa = A[0, i]
+                if aaa > 0:
+                    lis.append(zz)
+                zz += 1
+            a = str(lis)
+            textvar = "在第"+a+"时刻出现了故障"
+            self.init_data_text1.insert(INSERT,textvar)
+            XX.Figzz(R2,D2)
+
+        except IOError:
+            messagebox.showinfo(title="Error",message="请输入正确的文件及格式")
